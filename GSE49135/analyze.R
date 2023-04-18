@@ -1,6 +1,7 @@
 library(GEOquery)
 library(limma)
 library(io)
+library(modeest)
 
 # platform: GPL10558
 #           Illumina HumanHT-12 V4.0 expression beadchip
@@ -23,17 +24,28 @@ min(x)
 
 # left-shift towards 0 because x has negative values
 x <- x - min(x);
-hist(x, breaks=100);
 
-x.f <- filter_undetected(x);
+# estimate the background using the mode and remove background
+m <- mlv(x, method="Tsybakov");
+
+hist(x, breaks=500);
+abline(v=m, col="royalblue3");
+
+x.b <- x - m;
+x.b[x.b < 0] <- 0;
+hist(x.b, breaks=500);
+hist(x.b[x.b > 0], breaks=500);
+
+x.f <- filter_undetected(x.b, expr.cut=0.5, prop.cut=0.8);
+#x.f <- x;
+
+hist(x.f, breaks=100);
 
 # skip filtering undetected genes
 #x.f <- x;
 
 dim(x)
 dim(x.f)
-
-# examine distribution of pre-processed data
 hist(x.f, breaks=100);
 boxplot(x.f)
 max(x.f)

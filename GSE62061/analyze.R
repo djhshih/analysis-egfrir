@@ -2,6 +2,8 @@ library(GEOquery)
 library(limma)
 library(ggplot2)
 library(io)
+library(preprocessCore)
+library(modeest)
 
 # platform: GPL10558
 #           Illumina HumanHT-12 V4.0 expression beadchip
@@ -27,15 +29,33 @@ hist(x, breaks=100);
 min(x)
 max(x)
 
-expr.clip <- quantile(x, c(0.005));
-x <- x - expr.clip;
-x[x < 0] <- 0;
-hist(x, breaks=100);
+boxplot(x)
+# samples appear to be from two batches
+# with slightly different distributions
 
-x.f <- filter_undetected(x);
+x.n <- normalize.quantiles(x);
+rownames(x.n) <- rownames(x);
+colnames(x.n) <- colnames(x);
+
+# estimate the background using the mode and remove background
+m <- mlv(x.n, method="Tsybakov");
+
+hist(x.n, breaks=100);
+abline(v=m, col="royalblue3");
+
+x.b <- x.n - m;
+x.b[x.b < 0] <- 0;
+hist(x.b, breaks=500);
+hist(x.b[x.b > 0], breaks=500);
+
+x.f <- filter_undetected(x.b, expr.cut=1, prop.cut=0.8);
+#x.f <- x;
 
 dim(x)
 dim(x.f)
+
+hist(x.f, breaks=100);
+boxplot(x.f);
 
 # prepare phenotype data
 
