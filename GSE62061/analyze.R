@@ -43,13 +43,14 @@ m <- mlv(x.n, method="Tsybakov");
 hist(x.n, breaks=100);
 abline(v=m, col="royalblue3");
 
-x.b <- x.n - m;
-x.b[x.b < 0] <- 0;
-hist(x.b, breaks=500);
-hist(x.b[x.b > 0], breaks=500);
+# x.b <- x.n - m;
+# x.b[x.b < 0] <- 0;
+# hist(x.b, breaks=500);
+# hist(x.b[x.b > 0], breaks=500);
+x.b <- x;
 
-x.f <- filter_undetected(x.b, expr.cut=1, prop.cut=0.8);
-#x.f <- x;
+# x.f <- filter_undetected(x.b, expr.cut=1, prop.cut=0.8);
+x.f <- x;
 
 dim(x)
 dim(x.f)
