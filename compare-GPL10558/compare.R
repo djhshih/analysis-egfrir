@@ -4,8 +4,28 @@ library(io)
 res.g1 <- qread("../GSE49135/GSE49135_limma.rds");
 res.g2 <- qread("../GSE62061/GSE62061_limma.rds");
 
+hist(res.g1[[1]]$t, breaks=100)
+hist(res.g2[[1]]$t, breaks=100)
+
+filter_rank <- function(res, K) {
+	r <- rank(res$t);
+	idx <- r <= K | r > nrow(res) - K;
+	res[idx, ]
+}
+
+# filter for top k genes
+K <- 3000;
+res.g1.f <- lapply(res.g1, filter_rank, K=K);
+res.g2.f <- lapply(res.g2, filter_rank, K=K);
+
 # match probes so that they are in the same order across studies
-probes <- intersect(rownames(res.g1[[1]]), rownames(res.g2[[1]]));
+# NB  if comparing across different platforms,
+#     we should match based on ensembl IDs
+probes <- intersect(
+	Reduce(function(x, y) intersect(x, y), lapply(res.g1.f, rownames)),
+	Reduce(function(x, y) intersect(x, y), lapply(res.g2.f, rownames))
+);
+stopifnot(length(probes) > 0);
 res.g1.m <- lapply(res.g1, function(res) res[probes, ]);
 res.g2.m <- lapply(res.g2, function(res) res[probes, ]);
 
@@ -18,12 +38,23 @@ for (i in 1:length(res.g1.m)) {
 
 # ---
 
-smooth_scatter <- function(x, y, ...) {
+smooth_scatter <- function(x, y, cut=K, ...) {
 	xlim <- range(x);
 	ylim <- range(y);
 	lim <- c(min(xlim[1], ylim[1]), max(xlim[2], ylim[2]));
-	smoothScatter(x, y, xlim=lim, ylim=lim, ...);
+	if (length(x) > 1e3) {
+		smoothScatter(x, y, xlim=lim, ylim=lim, nbin=512, ...);
+		points(x, y, pch='.');
+	} else {
+		plot(x, y, xlim=lim, ylim=lim, ...);
+	}
 	abline(a=0, b=1, col="grey30");
+	# abline(
+	# 	h = c(cut, length(y) - cut),
+	# 	v = c(cut, length(x) - cut),
+	# 	col = "grey30"
+	# );
+	cor(x,  y)
 }
 
 # ideal correlation for the same cell line (i.e. with itself)
